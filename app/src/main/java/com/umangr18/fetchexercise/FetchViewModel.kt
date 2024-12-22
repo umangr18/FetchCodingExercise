@@ -1,14 +1,12 @@
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
 
-class FetchViewModel : ViewModel() {
+class FetchViewModel(
+    private val fetchApiService: FetchApiService = FetchRetrofitClient.fetchApiService
+) : ViewModel() {
 
     private val _screenState = MutableStateFlow<FetchScreenContract.UiState<FetchScreenContract.FetchScreenState>>(FetchScreenContract.UiState.ContentLoading)
     val screenState: StateFlow<FetchScreenContract.UiState<FetchScreenContract.FetchScreenState>> get() = _screenState
@@ -17,31 +15,21 @@ class FetchViewModel : ViewModel() {
         fetchItems()
     }
 
-    private fun fetchItems() {
+    fun fetchItems() {
         viewModelScope.launch {
-            FetchRetrofitClient.fetchApiService.getListItems().enqueue(object : Callback<List<ListItem>> {
-                override fun onResponse(call: Call<List<ListItem>>, response: Response<List<ListItem>>) {
-                    if (response.isSuccessful) {
-                        response.body()?.let { data ->
-                            val filteredData = data.filter { !it.name.isNullOrBlank() }
-                            val sortedData = filteredData.sortedWith(compareBy(
-                                { it.listId },
-                                { it.name?.removePrefix(PREFIX)?.toIntOrNull() ?: 0 }
-                            ))
-                            val state = FetchScreenContract.FetchScreenState(uiData = sortedData)
-                            _screenState.value = FetchScreenContract.UiState.Success(state)
-                        }
-                    } else {
-                        Log.e("ItemViewModel", "Failed to load data")
-                        _screenState.value = FetchScreenContract.UiState.Error()
-                    }
-                }
-
-                override fun onFailure(call: Call<List<ListItem>>, t: Throwable) {
-                    Log.e("ItemViewModel", "Error: ${t.message}")
-                    _screenState.value = FetchScreenContract.UiState.Error()
-                }
-            })
+            try {
+                _screenState.value = FetchScreenContract.UiState.ContentLoading
+                val result = fetchApiService.getListItems()
+                val filteredData = result.filter { !it.name.isNullOrBlank() }
+                val sortedData = filteredData.sortedWith(compareBy(
+                    { it.listId },
+                    { it.name?.removePrefix(PREFIX)?.toIntOrNull() ?: 0 }
+                ))
+                val state = FetchScreenContract.FetchScreenState(uiData = sortedData)
+                _screenState.value = FetchScreenContract.UiState.Success(state)
+            } catch (e: Exception) {
+                _screenState.value = FetchScreenContract.UiState.Error()
+            }
         }
     }
 
@@ -52,11 +40,7 @@ class FetchViewModel : ViewModel() {
 
 
 interface FetchScreenContract {
-    data class FetchScreenState(val uiData: List<ListItem>) {
-        companion object {
-            fun default() = FetchScreenState(emptyList())
-        }
-    }
+    data class FetchScreenState(val uiData: List<ListItem>)
 
     sealed interface UiState<out T> {
         data object ContentLoading : UiState<Nothing>

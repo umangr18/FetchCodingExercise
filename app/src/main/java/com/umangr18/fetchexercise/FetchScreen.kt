@@ -4,6 +4,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,6 +15,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -33,7 +35,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.umangr18.fetchexercise.ui.theme.FetchExerciseTheme
 
 @Composable
 fun FetchScreen(viewModel: FetchViewModel = viewModel()) {
@@ -45,7 +46,12 @@ fun FetchScreen(viewModel: FetchViewModel = viewModel()) {
             .animateContentSize(),
         state = screenState,
         loadingContent = {
-            //LoadingIndicator()
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                CircularProgressIndicator()
+            }
         },
         successContent = { uiData, scrollState ->
             FetchScreenSuccessContent(uiData, scrollState)
@@ -160,7 +166,7 @@ fun CollapsibleList(items: List<ListItem>, listId: Int) {
         if (showItems) {
             Column {
                 items.forEachIndexed { index, item ->
-                    ListItem(
+                    CollapsibleListItem(
                         item = item,
                         showDivider = index != items.size - 1
                     )
@@ -171,7 +177,7 @@ fun CollapsibleList(items: List<ListItem>, listId: Int) {
 }
 
 @Composable
-fun ListItem(item: ListItem, showDivider: Boolean) {
+fun CollapsibleListItem(item: ListItem, showDivider: Boolean) {
     Text(
         text = "${item.name}",
         style = MaterialTheme.typography.bodyLarge,
@@ -191,7 +197,14 @@ fun ListItem(item: ListItem, showDivider: Boolean) {
 @Preview(showBackground = true)
 @Composable
 fun GreetingPreview() {
-    FetchExerciseTheme {
-        FetchScreen()
+    MaterialTheme {
+        FetchScreenSuccessContent(
+            items = listOf(
+                ListItem(2, 1, "Item 2"),
+                ListItem(1, 2, "Item 1"),
+                ListItem(3, 3, "Item 3")
+            ),
+            scrollState = rememberScrollState()
+        )
     }
 }

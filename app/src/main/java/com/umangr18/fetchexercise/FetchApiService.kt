@@ -3,5 +3,5 @@ import retrofit2.http.GET
 
 interface FetchApiService {
     @GET("hiring.json")
-    fun getListItems(): Call<List<ListItem>>
+    suspend fun getListItems(): List<ListItem>
 }
